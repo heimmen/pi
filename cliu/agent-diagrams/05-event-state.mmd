@@ -1,0 +1,14 @@
+flowchart TD
+  E1["message_start / message_update"] --> S1["streamingMessage = message"]
+  E2["message_end"] --> S2["streamingMessage = undefined<br/>messages.push 唯一增长点"]
+  E3["tool_execution_start"] --> S3["pendingToolCalls 增加 id"]
+  E4["tool_execution_end"] --> S4["pendingToolCalls 移除 id"]
+  E5["turn_end 带 errorMessage"] --> S5["state.errorMessage 赋值"]
+  E6["agent_end"] --> S6["streamingMessage = undefined"]
+  S1 --> LIS
+  S2 --> LIS
+  S3 --> LIS
+  S4 --> LIS
+  S5 --> LIS
+  S6 --> LIS["await 所有 subscribe 监听器<br/>按注册顺序，计入 run settlement"]
+  LIS --> IDLE["finishRun<br/>isStreaming=false<br/>activeRun.resolve"]

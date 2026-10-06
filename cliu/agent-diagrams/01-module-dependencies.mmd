@@ -1,0 +1,23 @@
+graph TD
+  index["index.ts 桶导出"]
+  agent["agent.ts<br/>Agent 状态 + 队列 + 事件分发"]
+  loop["agent-loop.ts<br/>无状态循环内核"]
+  sf["stream-fn.ts<br/>默认 StreamFn 注册表"]
+  proxy["proxy.ts<br/>HTTP/SSE 版 StreamFn"]
+  types["types.ts<br/>纯类型层"]
+  pai["@earendil-works/pi-ai"]
+
+  index --> agent
+  index --> loop
+  index --> proxy
+  index --> types
+  index -->|setDefaultStreamFn| sf
+  agent -->|runAgentLoop / runAgentLoopContinue| loop
+  agent -->|getDefaultStreamFn| sf
+  loop -->|getDefaultStreamFn| sf
+  agent -.->|类型| types
+  loop -.->|类型| types
+  sf -.->|类型| types
+  agent --> pai
+  loop --> pai
+  proxy --> pai

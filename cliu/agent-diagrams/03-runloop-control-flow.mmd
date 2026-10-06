@@ -1,0 +1,28 @@
+flowchart TD
+  START(["runLoop 入口"]) --> STEER0["pendingMessages =<br/>getSteeringMessages()"]
+  STEER0 --> OUTER{"外层 while true"}
+  OUTER --> INNER{"内层 hasMoreToolCalls<br/>或 pendingMessages 非空"}
+  INNER -->|是| PREP["lastCompletedTurn 存在时<br/>prepareNextTurn 换 context/model<br/>并补投一次 steering"]
+  PREP --> DECL["declareToolChanges<br/>emit message_start/end"]
+  DECL --> PREQ["prepareRequest<br/>可整体替换 context/model"]
+  PREQ --> STREAM["streamAssistantResponse<br/>transformContext 然后 convertToLlm 然后 StreamFn"]
+  STREAM --> STOP{"stopReason 是<br/>error 或 aborted"}
+  STOP -->|是| HARD["finishTurn 然后 turn_end 然后 agent_end<br/>直接 return"]
+  STOP -->|否| TC{"有 toolCall 吗"}
+  TC -->|"是且 length 截断"| FAIL["failToolCallsFromTruncatedMessage<br/>全部判失败不执行"]
+  TC -->|是| EXEC["executeToolCalls<br/>串行或并行"]
+  TC -->|否| FT
+  FAIL --> FT["finishTurn 然后 turn_end"]
+  EXEC --> FT
+  FT --> ENDQ{"decision.action"}
+  ENDQ -->|end| AE1["emit agent_end 然后 return"]
+  ENDQ -->|continue| EC["explicitContinuation = true"]
+  ENDQ -->|undefined| POLL
+  EC --> POLL{"poll steering 或<br/>hasMoreToolCalls"}
+  POLL -->|是| RESET["explicitContinuation = false"] --> INNER
+  POLL -->|否| INNER
+  INNER -->|否| FOLLOW{"followUp 非空"}
+  FOLLOW -->|是| SETP["pendingMessages = followUp"] --> OUTER
+  FOLLOW -->|否| EXPL{"explicitContinuation"}
+  EXPL -->|是| OUTER
+  EXPL -->|否| AE2["emit agent_end 然后 return"]

@@ -1,0 +1,19 @@
+flowchart LR
+  subgraph PREP["阶段一 prepareToolCall，逐条串行"]
+    P1["find tool by name"] --> P2["prepareArguments 兼容 shim"]
+    P2 --> P3["validateToolArguments 校验"]
+    P3 --> P4["beforeToolCall 钩子"]
+  end
+  P4 --> P5{"block 或校验失败"}
+  P5 -->|是| IMM["immediate error result<br/>terminate 透传"]
+  P4 -.->|"signal.aborted"| AB["Operation aborted"]
+  P5 -->|否| MODE{"toolExecution 为 sequential<br/>或本批含 executionMode sequential"}
+  MODE -->|是| SEQ["逐条 execute 再 finalize<br/>emit end 与 result 均保序"]
+  MODE -->|否| PAR["execute 用 Promise.all 并发<br/>finalize 按完成顺序<br/>end 事件按完成序<br/>toolResult 消息按源序"]
+  SEQ --> AGC{"afterToolCall 存在"}
+  PAR --> AGC
+  AGC -->|是| OVR["content / details / usage<br/>isError / terminate 逐字段覆盖"]
+  AGC -->|否| TERM
+  OVR --> TERM{"本批每条 terminate 均为真"}
+  TERM -->|是| SKIP["跳过后续 LLM 调用"]
+  TERM -->|否| NEXT["回到内层循环继续下一轮"]

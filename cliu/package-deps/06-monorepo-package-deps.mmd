@@ -1,0 +1,54 @@
+flowchart LR
+  chord["chord<br/>@earendil-works/chord<br/>应用组合运行时 · 复制状态 / RPC"]
+  tui["tui<br/>@earendil-works/pi-tui<br/>终端 UI 差分渲染"]
+  telemetry["telemetry<br/>@earendil-works/pi-telemetry<br/>遥测契约与 schema"]
+  codemode["codemode<br/>@earendil-works/pi-codemode<br/>沙箱 JS 执行"]
+  mcp["mcp<br/>@earendil-works/pi-mcp<br/>MCP 客户端"]
+
+  protocol["protocol<br/>@earendil-works/pi-protocol<br/>CBOR 会话协议"]
+  ai["ai<br/>@earendil-works/pi-ai<br/>统一 LLM API"]
+
+  agent["agent<br/>@earendil-works/pi-agent-core<br/>Agent 循环内核"]
+  durable["durable<br/>@earendil-works/pi-durable<br/>持久化会话 / 任务 / 文档"]
+  client["client<br/>@earendil-works/pi-client<br/>远程会话客户端"]
+  server["server<br/>@earendil-works/pi-server<br/>实验性服务端"]
+
+  coding["coding-agent<br/>@earendil-works/pi-coding-agent<br/>编码 Agent CLI"]
+
+  evals["evals<br/>@earendil-works/pi-evals<br/>私有 · 仅开发期"]
+
+  ai --> telemetry
+  protocol --> chord
+  agent --> ai
+  durable --> chord
+  durable --> ai
+  client --> chord
+  client --> protocol
+  server --> chord
+  server --> protocol
+  coding --> chord
+  coding --> agent
+  coding --> ai
+  coding --> codemode
+  coding --> mcp
+  coding --> tui
+
+  coding -.->|dev| client
+  coding -.->|dev| protocol
+  coding -.->|dev| server
+  evals -.->|dev| ai
+  evals -.->|dev| coding
+
+  classDef base fill:#eeeeee,stroke:#9e9e9e,color:#212121
+  classDef mid fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a
+  classDef svc fill:#dcfce7,stroke:#22c55e,color:#14532d
+  classDef app fill:#ffedd5,stroke:#f97316,color:#7c2d12
+  classDef priv fill:#fce7f3,stroke:#ec4899,color:#831843
+
+  class chord,tui,telemetry,codemode,mcp base
+  class protocol,ai mid
+  class agent,durable,client,server svc
+  class coding app
+  class evals priv
+
+  linkStyle 15,16,17,18,19 stroke-dasharray:6 4

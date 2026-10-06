@@ -1,0 +1,30 @@
+sequenceDiagram
+  autonumber
+  participant U as 调用方
+  participant A as Agent (agent.ts)
+  participant L as runLoop (agent-loop.ts)
+  participant S as StreamFn
+  participant T as Tool.execute
+
+  U->>A: prompt("...")
+  A->>A: normalizePromptInput → AgentMessage[]
+  A->>A: runWithLifecycle 建 AbortController，isStreaming=true
+  A->>L: runAgentLoop(prompts, contextSnapshot, loopConfig, emit, signal, streamFn)
+  L->>L: declareToolChanges() 工具差集 → system 消息
+  L-->>A: emit agent_start / turn_start / message_start+end
+  A-->>U: await 监听器，形成屏障
+  L->>L: prepareNextTurn → prepareRequest
+  L->>S: streamFunction(model, llmContext, opts)
+  S-->>L: start / text_delta / toolcall_delta ... / done
+  L-->>A: emit message_start / message_update* / message_end
+  A-->>U: 流式增量
+  L->>T: execute(id, args, signal, onUpdate)
+  T-->>L: onUpdate → tool_execution_update
+  L-->>A: emit tool_execution_start/end + toolResult message_start/end
+  L->>L: finishTurn → turn_end
+  alt 有工具结果 / steering / follow-up
+    L->>S: 发起下一轮请求
+  else 结束
+    L-->>A: emit agent_end
+    A->>A: finishRun，isStreaming=false，resolve(activeRun)
+  end

@@ -1,0 +1,27 @@
+flowchart LR
+  subgraph pi["pi packages/agent · agent-loop.ts · 通用内核"]
+    direction TB
+    runLoop["runLoop 双层循环<br/>（工具 + steering 内层 / follow-up 外层）"]
+    streamFn["streamFunction(model, ctx, opts)<br/>模型无关，可换 provider"]
+    exec["executeToolCalls<br/>并行 / 串行 + before/after 钩子"]
+    finish["finishTurn / prepareNextTurn / prepareRequest"]
+    transform["transformContext → convertToLlm"]
+    events["AgentEvent 事件流 + subscribe"]
+  end
+
+  subgraph cc["cc-haha · src/query.ts · Claude Code 生产实现"]
+    direction TB
+    queryLoop["queryLoop 单层 while(<br/>state 每次 continue 整体重写)"]
+    callModel["deps.callModel(...)<br/>绑定 Anthropic 流式 + fallback/缓存"]
+    runTools["runTools / StreamingToolExecutor"]
+    stopHooks["handleStopHooks / transitions"]
+    compact["autocompact / microcompact /<br/>snip / contextCollapse"]
+    gen["yield StreamEvent / Message<br/>AsyncGenerator 流"]
+  end
+
+  runLoop -.-|"≈ 控制流"| queryLoop
+  streamFn -.-|"≈ LLM 边界"| callModel
+  exec -.-|"≈ 工具执行"| runTools
+  finish -.-|"≈ 收尾/决策"| stopHooks
+  transform -.-|"≈ 上下文打理"| compact
+  events -.-|"≈ 事件流"| gen
