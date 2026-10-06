@@ -1,0 +1,37 @@
+flowchart TD
+  Q["query / queryLoop<br/>AsyncGenerator<br/>（yield 消息 · continue 循环）"]
+
+  subgraph L1["① 循环本地 State · 一轮内流动"]
+    S1["State<br/>messages · toolUseContext · turnCount<br/>autoCompactTracking · pendingToolUseSummary · transition"]
+    S2["7 个 continue 点整体重写<br/>state = { ... }"]
+  end
+
+  subgraph L2["② ToolUseContext · 跨轮会话上下文"]
+    T1["options · abortController · readFileState"]
+    T2["函数式 setter<br/>setAppState(f) · setInProgressToolUseIDs(f)<br/>setResponseLength(f) · appendSystemMessage"]
+  end
+
+  subgraph L3["③ 应用态 Store · UI / 权限 / 运行指标"]
+    A1["createStore<br/>getState · setState(updater) · subscribe"]
+    A2["AppState = DeepImmutable"]
+  end
+
+  subgraph L4["④ 转录本 · 归消费方所有（非 Agent）"]
+    C1["REPL.tsx<br/>setMessages(prev => [...prev, msg])"]
+    C2["QueryEngine / SDK<br/>messages.push(message)"]
+  end
+
+  Q -->|yield 消息| C1
+  Q -->|yield 消息| C2
+  Q -->|continue| S2
+  S2 -->|重写| S1
+  S1 -.->|读写| T1
+  S1 -.->|读写| T2
+  T2 -->|"setAppState 写入"| A1
+  A1 -->|"更新与通知订阅者"| A2
+
+
+  style L1 fill:#dbeafe,stroke:#3b82f6
+  style L2 fill:#dcfce7,stroke:#22c55e
+  style L3 fill:#fef9c3,stroke:#eab308
+  style L4 fill:#ffedd5,stroke:#f97316

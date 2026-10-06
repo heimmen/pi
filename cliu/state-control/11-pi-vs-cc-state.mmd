@@ -1,0 +1,25 @@
+flowchart LR
+  subgraph P["pi agent-core · 单一状态 + 事件归约"]
+    direction TB
+    P0["loop currentContext<br/>（快照，循环自由改）"]
+    PW["processEvents()<br/>唯一的写回通道 + 订阅屏障"]
+    P1["Agent._state<br/>messages · streaming · pending tools"]
+    EP["外部写入口<br/>steer/followUp · reset · abort"]
+  end
+  subgraph C["cc-haha · 四层分工 · 无统一 reducer"]
+    direction TB
+    C1["① State（query.ts）<br/>循环本地 · continue 重写"]
+    C2["② ToolUseContext<br/>会话上下文 · 函数式 setter"]
+    C3["③ createStore / AppState<br/>UI · 权限 · 运行指标"]
+    C4["④ 消费方 messages<br/>REPL / QueryEngine 各自 push"]
+  end
+
+  P0 -->|"事件流"| PW
+  PW -->|"归约"| P1
+  EP -.->|"仅在边界操作"| P1
+
+  C1 --> C2 --> C3
+  C1 -->|"yield"| C4
+
+  style P fill:#dbeafe,stroke:#3b82f6
+  style C fill:#fef9c3,stroke:#eab308
